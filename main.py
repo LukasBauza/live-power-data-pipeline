@@ -1,23 +1,12 @@
-from entsoe.entsoe import EntsoePandasClient
-import pandas
-import time
+import asyncio
 
-from src import config
-
-# Connect to the client using the API key.
-client = EntsoePandasClient(api_key=config.API_KEY)
+from src.pull import LoadPuller
+from src.config import COUNTRY_CODE, TIME_ZONE
 
 
 def main():
-    while True:
-        now = pandas.Timestamp.now(tz=config.TIME_ZONE).floor("h")
-        start = now - pandas.Timedelta("1h")
-        end = now
-
-        df = client.query_load(config.COUNTRY_CODE, start=start, end=end)
-        print(f"Data at {now}:\n", df)
-
-        time.sleep(3600)
+    dublin_load_puller = LoadPuller(COUNTRY_CODE, TIME_ZONE)
+    asyncio.run(dublin_load_puller.hourly_pull())
 
 
 if __name__ == "__main__":
