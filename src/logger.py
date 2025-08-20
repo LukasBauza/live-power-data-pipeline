@@ -5,3 +5,4 @@ datefmt = "%Y-%m-%d %H:%M:%S"
 logging.basicConfig(format=format, datefmt=datefmt)
 
 log = logging.getLogger("entsoe")
+log.setLevel(logging.INFO)
