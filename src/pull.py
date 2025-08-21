@@ -45,7 +45,7 @@ class LoadPuller:
         while True:
             # Make sure that it is at the current hour, minutes not needed
             end = pandas.Timestamp.now(tz=self.time_zone).floor("h")
-            start = end - pandas.Timedelta(hours=1)
+            start = end - pandas.Timedelta(hours=24)
 
             log.info(f"Pulling load data for {start} to {end} at {self.country_code}")
             load_data = pandas.DataFrame()
@@ -55,6 +55,7 @@ class LoadPuller:
                 if load_data.empty:
                     log.warning("No data returned")
                 else:
+                    load_data = load_data.tail(1)
                     log.info(f"Data retrieved\n {load_data}")
             except Exception as e:
                 log.error(f"Error fetching data: {e}")
