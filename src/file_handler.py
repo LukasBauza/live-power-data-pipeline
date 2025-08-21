@@ -1,8 +1,9 @@
+from datetime import timedelta
 from os import makedirs, stat
 from os.path import dirname, isfile, getsize
 import pandas
 
-from .config import RAW_DIR
+from .config import RAW_DIR, TIME_ZONE
 from .logger import log
 
 
@@ -33,5 +34,55 @@ class FileHandler:
             header_exists = isfile(self.file_path)
             data.to_csv(self.file_path, mode="a", header=not header_exists, index=True)
             log.info(f"Data saved to {self.file_path}")
+
         except Exception as e:
             log.error(f"Failed writing to {self.file_path}: {e}")
+
+    def read_last_entry(self):
+        if self.file_empty():
+            log.info(
+                f"No entries to read from '{self.file_path}' (file missing or empty)."
+            )
+            return None
+
+        try:
+            last_entry = pandas.read_csv(
+                self.file_path, index_col=0, parse_dates=True
+            ).index[-1]
+            log.info(f"Read last entry timestamp {last_entry} from '{self.file_path}'.")
+
+            return last_entry
+
+        except Exception as e:
+            log.error(f"Failed to read last entry from '{self.file_path}': {e}")
+
+            return None
+
+    def read_previous_days(self, days):
+        if self.file_empty():
+            log.info(
+                f"No entries to read from '{self.file_path}' (file missing or empty)."
+            )
+            return None
+
+        try:
+            df = pandas.read_csv(self.file_path, index_col=0, parse_dates=True)
+
+            if not isinstance(df.index, pandas.DatetimeIndex):
+                df.index = pandas.to_datetime(df.index)
+
+            today = pandas.Timestamp.now(tz=TIME_ZONE).normalize()
+            start_date = today - timedelta(days=days)
+            filtered_df = df[df.index >= start_date]
+
+            log.info(
+                f"Ready {len(filtered_df)} entries from '{self.file_path}' from {start_date} to now"
+            )
+
+            return filtered_df
+
+        except Exception as e:
+            log.error(
+                f"Failed to read previous {days} days from '{self.file_path}': {e}"
+            )
+            return None
