@@ -3,7 +3,7 @@ from os import makedirs, stat
 from os.path import dirname, isfile, getsize
 import pandas
 
-from .config import RAW_DIR, TIME_ZONE
+from .config import PROCESSED_DIR, RAW_DIR, TIME_ZONE
 from .logger import log
 
 
@@ -11,9 +11,9 @@ class FileHandler:
     def __init__(self, data_type: str, country_code: str):
         self.file_path: str = f"{RAW_DIR}/{data_type}_{country_code}.csv"
 
-    def ensure_dir_exists(self):
+    def ensure_dir_exists(self, dir: str):
         try:
-            makedirs(RAW_DIR, exist_ok=True)
+            makedirs(dir, exist_ok=True)
         except Exception as e:
             log.error(f"Error creating directory: {e}")
 
@@ -23,11 +23,10 @@ class FileHandler:
         if getsize(self.file_path) == 0:
             return True
 
-        log.info(f"File '{self.file_path}' not empty")
         return False
 
     def save_to_csv(self, data: pandas.DataFrame):
-        self.ensure_dir_exists()
+        self.ensure_dir_exists(RAW_DIR)
 
         try:
             # Only add the header if it doesn't exist
@@ -58,7 +57,7 @@ class FileHandler:
 
             return None
 
-    def read_previous_days(self, days):
+    def read_previous_days(self, days: int):
         if self.file_empty():
             log.info(
                 f"No entries to read from '{self.file_path}' (file missing or empty)."
@@ -86,3 +85,14 @@ class FileHandler:
                 f"Failed to read previous {days} days from '{self.file_path}': {e}"
             )
             return None
+
+    def save_to_txt(self, data, txt_file_name: str):
+        self.ensure_dir_exists(PROCESSED_DIR)
+        txt_path = f"{PROCESSED_DIR}/{txt_file_name}.txt"
+
+        try:
+            with open(txt_path, "a") as file:
+                file.write(str(data) + "\n")
+            log.info(f"Text data saved to {txt_path}")
+        except Exception as e:
+            log.error(f"Failed writing to {txt_path}: {e}")

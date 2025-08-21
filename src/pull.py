@@ -5,6 +5,7 @@ import pandas
 from .config import API_KEY, RAW_DIR
 from .logger import log
 from .file_handler import FileHandler
+from .calculate import average_load, peak_load, plot
 
 
 class LoadPuller:
@@ -78,5 +79,17 @@ class LoadPuller:
                     log.info(f"Data retrieved\n {load_data}")
             except Exception as e:
                 log.error(f"Error fetching data: {e}\n Time: {last_saved} to {end}")
+
+            week_data = self.file_handler.read_previous_days(7)
+            if week_data is not None:
+                average = average_load(week_data)
+                print("Average load:", average)
+                self.file_handler.save_to_txt(average, "week_average_load")
+
+                peak = peak_load(week_data)
+                print("Peak load", peak)
+                self.file_handler.save_to_txt(peak, "week_peak_load")
+
+                plot(week_data)
 
             await asyncio.sleep(3600)
