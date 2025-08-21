@@ -8,10 +8,17 @@ from .logger import log
 
 
 class FileHandler:
+    """
+    Handles reading and writing of files for storing raw and processed data.
+    """
+
     def __init__(self, data_type: str, country_code: str):
         self.file_path: str = f"{RAW_DIR}/{data_type}_{country_code}.csv"
 
     def ensure_dir_exists(self, dir: str):
+        """
+        Ensures that a specified directory exists, and creates it if it doesn not.
+        """
         try:
             makedirs(dir, exist_ok=True)
         except Exception as e:
@@ -26,6 +33,9 @@ class FileHandler:
         return False
 
     def save_to_csv(self, data: pandas.DataFrame):
+        """
+        Saves the data to a csv file, with the header.
+        """
         self.ensure_dir_exists(RAW_DIR)
 
         try:
@@ -38,6 +48,9 @@ class FileHandler:
             log.error(f"Failed writing to {self.file_path}: {e}")
 
     def read_last_entry(self):
+        """
+        Returns the last entry of the raw data, from the csv file.
+        """
         if self.file_empty():
             log.info(
                 f"No entries to read from '{self.file_path}' (file missing or empty)."
@@ -58,6 +71,9 @@ class FileHandler:
             return None
 
     def read_previous_days(self, days: int):
+        """
+        Returns the raw data from the csv file, from the current time, all the way back to the previously day.
+        """
         if self.file_empty():
             log.info(
                 f"No entries to read from '{self.file_path}' (file missing or empty)."
@@ -87,6 +103,9 @@ class FileHandler:
             return None
 
     def save_to_txt(self, data, txt_file_name: str):
+        """
+        Used for saving data to a text file, and creatin the file if it doesn't exist.
+        """
         self.ensure_dir_exists(PROCESSED_DIR)
         txt_path = f"{PROCESSED_DIR}/{txt_file_name}.txt"
 

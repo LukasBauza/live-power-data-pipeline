@@ -13,6 +13,9 @@ def peak_load(data: pandas.DataFrame):
 
 
 def plot(data: pandas.DataFrame):
+    """
+    Plots the average load for each day in the past week.
+    """
     n = len(data)
 
     daily_chunks = [data.iloc[i:7] for i in range(7)]

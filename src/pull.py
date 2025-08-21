@@ -9,6 +9,10 @@ from .calculate import average_load, peak_load, plot
 
 
 class LoadPuller:
+    """
+    Class to handle the retrieval of electrical load data.
+    """
+
     def __init__(self, country_code: str, time_zone: str, api_key: str):
         self.client: EntsoePandasClient = EntsoePandasClient(api_key=api_key)
         self.country_code: str = country_code
@@ -31,15 +35,27 @@ class LoadPuller:
                 log.error(f"Failed to pull intial data: {e}")
 
     def pull_load(self, start: pandas.Timestamp, end: pandas.Timestamp):
+        """
+        Pulls the electrical load based on the given start and end timestamp.
+        """
         return self.client.query_load(self.country_code, start=start, end=end)
 
     async def pull_load_data_async(
         self, start: pandas.Timestamp, end: pandas.Timestamp
     ):
+        """
+        Pulls the electrical load asyncronously, this means the thread can
+        be used for other things, like pulling other data.
+        """
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self.pull_load, start, end)
 
     async def pull_with_retries(self, start, end, attempts: int = 3, delay: int = 300):
+        """
+        Pulls the electrical data more as many times as needed, with a time delay,
+        between each request. This is used for making sure if there is an issue,
+        getting the data, a retry can occur sooner.
+        """
         for attempt in range(1, attempts + 1):
             try:
                 load_data = await self.pull_load_data_async(start, end)
@@ -59,6 +75,10 @@ class LoadPuller:
         return pandas.DataFrame()
 
     async def hourly_pull(self):
+        """
+        Pulls the electricty load data at every hour. Once it is pulled, it then
+        saves the data to the file, while also using the data for the required calculations, and plotting.
+        """
         while True:
             end = pandas.Timestamp.now(tz=self.time_zone).floor("h")
             last_saved = self.file_handler.read_last_entry()
