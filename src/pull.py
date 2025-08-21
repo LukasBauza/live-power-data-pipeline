@@ -61,8 +61,13 @@ class LoadPuller:
         while True:
             end = pandas.Timestamp.now(tz=self.time_zone).floor("h")
             last_saved = self.file_handler.read_last_entry()
-            if last_saved is None:
+
+            if last_saved is not None:
+                last_saved = pandas.Timestamp(last_saved)
+                last_saved = last_saved.tz_convert(tz=self.time_zone)
+            else:
                 last_saved = end - pandas.Timedelta(hours=1)
+
             log.info(f"Previous last entry {last_saved}")
 
             try:
