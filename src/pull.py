@@ -4,6 +4,7 @@ import pandas
 
 from .config import API_KEY
 from .logger import log
+from .save import save_csv
 
 
 class LoadPuller:
@@ -28,14 +29,20 @@ class LoadPuller:
             start = end - pandas.Timedelta(hours=1)
 
             log.info(f"Pulling load data for {start} to {end} at {self.country_code}")
+            load_data = pandas.DataFrame
             try:
+                # TODO: Could make it try again a couple of times every 5 minutes.
                 load_data = await self.pull_load_data_async(start, end)
                 if load_data.empty:
                     log.warning("No data returned")
                 else:
-                    log.info("Data retrieved")
-                    print(load_data)
+                    log.info(f"Data retrieved\n {load_data}")
             except Exception as e:
                 log.error(f"Error fetching data: {e}")
+
+            if not load_data.empty:
+                save_csv("load", self.country_code, load_data)
+            else:
+                log.warning("Couldn't save {load_data}")
 
             await asyncio.sleep(3600)
