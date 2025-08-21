@@ -2,9 +2,9 @@ import asyncio
 from entsoe.entsoe import EntsoePandasClient
 import pandas
 
-from .config import API_KEY
+from .config import API_KEY, RAW_DIR
 from .logger import log
-from .save import save_csv
+from .file_handler import FileHandler
 
 
 class LoadPuller:
@@ -12,6 +12,21 @@ class LoadPuller:
         self.client: EntsoePandasClient = EntsoePandasClient(api_key=API_KEY)
         self.country_code: str = country_code
         self.time_zone: str = time_zone
+        self.file_handler: FileHandler = FileHandler("load", country_code)
+
+        if self.file_handler.file_empty():
+            log.info("Initialising data from last 7 days.")
+            end = pandas.Timestamp.now(tz=self.time_zone).floor("h")
+            start = end - pandas.Timedelta(days=7)
+
+            try:
+                load_data = asyncio.run(self.pull_with_retries(start, end))
+                if load_data.empty:
+                    log.warning("No initial data retrieved for the last 7 days.")
+                else:
+                    self.file_handler.save_to_csv(load_data)
+            except Exception as e:
+                log.error(f"Failed to pull intial data: {e}")
 
     def pull_load(self, start: pandas.Timestamp, end: pandas.Timestamp):
         return self.client.query_load(self.country_code, start=start, end=end)
@@ -50,7 +65,6 @@ class LoadPuller:
             log.info(f"Pulling load data for {start} to {end} at {self.country_code}")
             load_data = pandas.DataFrame()
             try:
-                # TODO: Could make it try again a couple of times every 5 minutes.
                 load_data = await self.pull_with_retries(start, end)
                 if load_data.empty:
                     log.warning("No data returned")
@@ -62,6 +76,6 @@ class LoadPuller:
             if load_data.empty:
                 log.warning(f"Couldn't save {load_data}")
             else:
-                save_csv("load", self.country_code, load_data)
+                self.file_handler.save_to_csv(load_data)
 
             await asyncio.sleep(3600)

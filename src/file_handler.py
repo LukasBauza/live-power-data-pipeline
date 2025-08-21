@@ -1,5 +1,5 @@
 from os import makedirs, stat
-from os.path import dirname, isfile
+from os.path import dirname, isfile, getsize
 import pandas
 
 from .config import RAW_DIR
@@ -16,8 +16,14 @@ class FileHandler:
         except Exception as e:
             log.error(f"Error creating directory: {e}")
 
-    def ensure_file_exists(self):
-        return isfile(self.file_path)
+    def file_empty(self):
+        if not isfile(self.file_path):
+            return True
+        if getsize(self.file_path) == 0:
+            return True
+
+        log.info(f"File '{self.file_path}' not empty")
+        return False
 
     def save_to_csv(self, data: pandas.DataFrame):
         self.ensure_dir_exists()
