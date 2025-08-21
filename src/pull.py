@@ -2,15 +2,15 @@ import asyncio
 from entsoe.entsoe import EntsoePandasClient
 import pandas
 
-from .config import API_KEY, RAW_DIR
+from .config import RAW_DIR
 from .logger import log
 from .file_handler import FileHandler
 from .calculate import average_load, peak_load, plot
 
 
 class LoadPuller:
-    def __init__(self, country_code: str, time_zone: str):
-        self.client: EntsoePandasClient = EntsoePandasClient(api_key=API_KEY)
+    def __init__(self, country_code: str, time_zone: str, api_key: str):
+        self.client: EntsoePandasClient = EntsoePandasClient(api_key=api_key)
         self.country_code: str = country_code
         self.time_zone: str = time_zone
         self.file_handler: FileHandler = FileHandler("load", country_code)
@@ -73,12 +73,17 @@ class LoadPuller:
 
             try:
                 load_data = await self.pull_load_data_async(last_saved, end)
+                # Dont need to have a duplicate of the last entry.
+                load_data.drop(index=load_data.index[0], axis=0, inplace=True)
                 if load_data.empty:
                     log.warning("No data returned")
                 else:
                     log.info(f"Data retrieved\n {load_data}")
+                    self.file_handler.save_to_csv(load_data)
+
             except Exception as e:
-                log.error(f"Error fetching data: {e}\n Time: {last_saved} to {end}")
+                log.warning(f"Couldn't fetch data: {e}\n Time: {last_saved} to {end}")
+                log.info("May have to wait longer until API can provide the data")
 
             week_data = self.file_handler.read_previous_days(7)
             if week_data is not None:
@@ -92,4 +97,8 @@ class LoadPuller:
 
                 plot(week_data)
 
+            next_hour = pandas.Timestamp.now(tz=self.time_zone) + pandas.Timedelta(
+                hours=1
+            )
+            log.info(f"Pulling again at {next_hour.floor('s')} hour")
             await asyncio.sleep(3600)
