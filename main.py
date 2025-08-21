@@ -2,7 +2,7 @@ import asyncio
 import getpass
 
 from src.pull import LoadPuller
-from src.config import COUNTRY_CODE, TIME_ZONE, enter_api
+from src.config import COUNTRY_CODE, TIME_ZONE
 
 
 def main():
