@@ -93,6 +93,23 @@ class FileHandler:
         try:
             with open(txt_path, "a") as file:
                 file.write(str(data) + "\n")
-            log.info(f"Text data saved to {txt_path}")
         except Exception as e:
             log.error(f"Failed writing to {txt_path}: {e}")
+
+    def get_all_lines(self):
+        if self.file_empty():
+            log.info(
+                f"No entries to read from '{self.file_path}' (file missing or empty)."
+            )
+            return []
+
+        try:
+            with open(self.file_path, "r", encoding="utf-8") as file:
+                lines = file.readlines()
+
+            log.info(f"Read {len(lines)} lines from '{self.file_path}'.")
+            return [line.strip() for line in lines]
+
+        except Exception as e:
+            log.error(f"Failed to read lines from '{self.file_path}': {e}")
+            return []
