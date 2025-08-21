@@ -55,7 +55,6 @@ class LoadPuller:
                 if load_data.empty:
                     log.warning("No data returned")
                 else:
-                    load_data = load_data.tail(1)
                     log.info(f"Data retrieved\n {load_data}")
             except Exception as e:
                 log.error(f"Error fetching data: {e}")
