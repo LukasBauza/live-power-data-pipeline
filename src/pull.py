@@ -18,6 +18,7 @@ class LoadPuller:
             log.info("Initialising data from last 7 days.")
             end = pandas.Timestamp.now(tz=self.time_zone).floor("h")
             start = end - pandas.Timedelta(days=7)
+            print("wowowow:", end)
 
             try:
                 load_data = asyncio.run(self.pull_with_retries(start, end))
@@ -58,24 +59,19 @@ class LoadPuller:
 
     async def hourly_pull(self):
         while True:
-            # Make sure that it is at the current hour, minutes not needed
             end = pandas.Timestamp.now(tz=self.time_zone).floor("h")
-            start = end - pandas.Timedelta(hours=24)
+            last_saved = self.file_handler.read_last_entry()
+            if last_saved is None:
+                last_saved = end - pandas.Timedelta(hours=1)
+            log.info(f"Previous last entry {last_saved}")
 
-            log.info(f"Pulling load data for {start} to {end} at {self.country_code}")
-            load_data = pandas.DataFrame()
             try:
-                load_data = await self.pull_with_retries(start, end)
+                load_data = await self.pull_load_data_async(last_saved, end)
                 if load_data.empty:
                     log.warning("No data returned")
                 else:
                     log.info(f"Data retrieved\n {load_data}")
             except Exception as e:
-                log.error(f"Error fetching data: {e}")
-
-            if load_data.empty:
-                log.warning(f"Couldn't save {load_data}")
-            else:
-                self.file_handler.save_to_csv(load_data)
+                log.error(f"Error fetching data: {e}\n Time: {last_saved} to {end}")
 
             await asyncio.sleep(3600)
